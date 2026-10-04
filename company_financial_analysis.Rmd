@@ -131,13 +131,14 @@ summary(market_model$finalModel)
 
 ## Profitability classification
 
-`Profitable` is derived from `Profits`, so the original `Profits` variable is deliberately excluded from the predictors to avoid direct target leakage.
+`Profitable` is derived from `Profits`, so the original `Profits` variable is deliberately excluded from the predictors to avoid direct target leakage. A single complete-case classification dataset is created before the split so Logistic Regression and KNN are trained and evaluated on exactly the same observations. KNN still receives centering/scaling inside resampling because distance-based methods require comparable feature scales.
 
 ```{r}
 classification_data <- companies %>%
   mutate(Profitable = factor(if_else(Profits > 0, "profitable", "not_profitable"))) %>%
   select(-Company_Name, -Profits) %>%
-  filter(!is.na(Profitable))
+  filter(!is.na(Profitable)) %>%
+  filter(if_all(everything(), ~ !is.na(.)))
 
 set.seed(1821)
 class_index <- createDataPartition(
@@ -173,7 +174,7 @@ knn_model <- train(
   method = "knn",
   metric = "Accuracy",
   trControl = control_class,
-  preProcess = c("medianImpute", "center", "scale"),
+  preProcess = c("center", "scale"),
   tuneLength = 10
 )
 ```
