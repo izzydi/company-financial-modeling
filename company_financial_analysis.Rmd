@@ -1,0 +1,199 @@
+---
+title: "Company Financial Modeling"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library(dplyr)
+library(ggplot2)
+library(GGally)
+library(caret)
+```
+
+## Data import
+
+Place the original whitespace-delimited company dataset at `data/companies.txt`.
+
+```{r}
+set.seed(1821)
+
+data_path <- file.path("data", "companies.txt")
+if (!file.exists(data_path)) {
+  stop("Missing data/companies.txt. See data/README.md for the expected file.")
+}
+
+companies <- read.table(
+  data_path,
+  header = TRUE,
+  stringsAsFactors = FALSE,
+  check.names = FALSE
+) %>%
+  mutate(across(where(is.character), factor))
+
+required_columns <- c(
+  "Company_Name", "Sector", "Sales", "Market_Value",
+  "Assets", "Profits", "Employees"
+)
+missing_columns <- setdiff(required_columns, names(companies))
+if (length(missing_columns) > 0) {
+  stop("Missing required columns: ", paste(missing_columns, collapse = ", "))
+}
+
+str(companies)
+summary(companies)
+```
+
+## Missingness and exploratory structure
+
+```{r}
+missing_summary <- sort(colSums(is.na(companies)), decreasing = TRUE)
+missing_summary
+```
+
+```{r}
+ggpairs(
+  companies %>%
+    select(Sales, Market_Value, Assets, Profits, Employees)
+)
+```
+
+## Stable transformations
+
+The original coursework used `sign(x) * log(abs(x))` for profits, which is undefined at zero. The audited workflow uses a signed `log1p` transform instead.
+
+```{r}
+signed_log1p <- function(x) sign(x) * log1p(abs(x))
+
+model_data <- companies %>%
+  transmute(
+    Sector,
+    log_sales = log1p(pmax(Sales, 0)),
+    log_market_value = log1p(pmax(Market_Value, 0)),
+    log_assets = log1p(pmax(Assets, 0)),
+    log_employees = log1p(pmax(Employees, 0)),
+    signed_log_profits = signed_log1p(Profits)
+  ) %>%
+  filter(if_all(everything(), ~ !is.na(.)))
+```
+
+## Multivariable sales regression
+
+All regression models use the same transformed response scale; RMSE values are therefore comparable within this section. The audited source does **not** compare RMSE from raw-sales and log-sales models as though they were on the same scale.
+
+```{r}
+control_reg <- trainControl(method = "repeatedcv", number = 5, repeats = 3)
+
+set.seed(1821)
+sales_model <- train(
+  log_sales ~ log_market_value + log_assets + log_employees + signed_log_profits,
+  data = model_data,
+  method = "lm",
+  metric = "RMSE",
+  trControl = control_reg
+)
+
+sales_model
+summary(sales_model$finalModel)
+par(mfrow = c(2, 2))
+plot(sales_model$finalModel)
+par(mfrow = c(1, 1))
+```
+
+## Positive market-value model
+
+Market value is a positive continuous quantity, so a Gamma GLM with a log link is used instead of the legacy Poisson count model.
+
+```{r}
+market_data <- companies %>%
+  filter(Market_Value > 0) %>%
+  transmute(
+    Market_Value,
+    log_sales = log1p(pmax(Sales, 0)),
+    log_assets = log1p(pmax(Assets, 0)),
+    log_employees = log1p(pmax(Employees, 0)),
+    signed_log_profits = signed_log1p(Profits)
+  ) %>%
+  filter(if_all(everything(), ~ !is.na(.)))
+
+set.seed(1821)
+market_model <- train(
+  Market_Value ~ .,
+  data = market_data,
+  method = "glm",
+  family = Gamma(link = "log"),
+  metric = "RMSE",
+  trControl = control_reg
+)
+
+market_model
+summary(market_model$finalModel)
+```
+
+## Profitability classification
+
+`Profitable` is derived from `Profits`, so the original `Profits` variable is deliberately excluded from the predictors to avoid direct target leakage.
+
+```{r}
+classification_data <- companies %>%
+  mutate(Profitable = factor(if_else(Profits > 0, "profitable", "not_profitable"))) %>%
+  select(-Company_Name, -Profits) %>%
+  filter(!is.na(Profitable))
+
+set.seed(1821)
+class_index <- createDataPartition(
+  classification_data$Profitable,
+  p = 0.75,
+  list = FALSE
+)
+class_train <- classification_data[class_index, ]
+class_test <- classification_data[-class_index, ]
+
+control_class <- trainControl(
+  method = "repeatedcv",
+  number = 5,
+  repeats = 3,
+  classProbs = TRUE,
+  savePredictions = "final"
+)
+
+set.seed(1821)
+logistic_model <- train(
+  Profitable ~ .,
+  data = class_train,
+  method = "glm",
+  family = binomial(),
+  metric = "Accuracy",
+  trControl = control_class
+)
+
+set.seed(1821)
+knn_model <- train(
+  Profitable ~ .,
+  data = class_train,
+  method = "knn",
+  metric = "Accuracy",
+  trControl = control_class,
+  preProcess = c("medianImpute", "center", "scale"),
+  tuneLength = 10
+)
+```
+
+## Held-out classification evaluation
+
+```{r}
+logistic_predictions <- predict(logistic_model, newdata = class_test)
+knn_predictions <- predict(knn_model, newdata = class_test)
+
+confusionMatrix(logistic_predictions, class_test$Profitable)
+confusionMatrix(knn_predictions, class_test$Profitable)
+```
+
+## Scope
+
+This is an academic financial-modelling project. Results illustrate regression and classification techniques and should not be interpreted as investment advice or valuation guidance.
+
+## Session information
+
+```{r}
+sessionInfo()
+```
