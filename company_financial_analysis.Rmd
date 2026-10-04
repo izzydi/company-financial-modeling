@@ -1,5 +1,5 @@
 ---
-title: "Project"
+title: "Company Financial Modeling"
 author: "Anastasios Vlaikidis"
 date: "5/23/2021"
 output:
@@ -14,6 +14,7 @@ library(car)
 library(ggplot2)
 library(GGally)
 library(caret)
+library(rockchalk)
 ```
 
 
@@ -24,7 +25,7 @@ head(companies)
 tail(companies)
 ```
 
-Exploring data using summary statistics_
+Exploring data using summary statistics
 ```{r}
 str(companies)
 ```
@@ -226,7 +227,7 @@ Market_Value <- log(SLD$Market_Value)
 Employees <- log(SLD$Employees)
 Profits <- sign(SLD$Profits)*log(abs(SLD$Profits))
 Sector <- SLD$Sector
-SLD2 <- data.frame(Assets,Sales,Market_Value,Profits,Employees)
+SLD2 <- data.frame(Assets,Sales,Market_Value,Profits,Employees,Sector)
 
 fit.lm4 <- train(Sales~
                  Assets+
@@ -259,7 +260,7 @@ plot(fit.lm4$finalModel)
 Find the mean values and put them in a new dataframe
 ```{r}
 df2 <- SLD2 %>% filter(Sector == "A")
-df2 <- lapply(df2,mean)
+df2 <- lapply(select(df2,-Sector),mean)
 df2 <- data.frame(df2)
 ```
 
@@ -308,7 +309,7 @@ plot(fit.glm$finalModel)
 Find the mean values and put them in a new dataframe
 ```{r}
 df3 <- SLD2 %>% filter(Sector == "A")
-df3 <- lapply(df3,mean)
+df3 <- lapply(select(df3,-Sector),mean)
 df3 <- data.frame(df3)
 ```
 
@@ -381,7 +382,7 @@ pred
 
 
 # Task 5
-## Tha dataset
+## The dataset
 ```{r}
 SLD8 <- select(SLD4,-c("Profits","Company_Name"))
 head(SLD8)
