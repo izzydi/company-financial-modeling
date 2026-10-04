@@ -1,40 +1,34 @@
 # Company Financial Modeling
 
-An R-based statistical modelling project examining relationships among company-level financial variables such as sales, market value, assets, profits and number of employees.
+An R-based statistical-modelling project examining relationships among company-level sales, market value, assets, profits and employment.
 
-## Project overview
+## Primary workflow
 
-The analysis covers data inspection, missing-value checks, exploratory analysis, linear modelling, log transformations, diagnostics and model comparison. It also includes stepwise regression using `glmStepAIC`.
+[`company_financial_analysis.Rmd`](company_financial_analysis.Rmd) is the audited source. It uses stable transformations, comparable response scales within model comparisons, an appropriate Gamma GLM for positive continuous market value and a leakage-aware profitability classification exercise.
 
 ## Repository structure
 
-- [`company_financial_analysis.Rmd`](company_financial_analysis.Rmd) — complete R Markdown analysis.
-- [`.gitignore`](.gitignore) — excludes local R/RStudio artifacts.
+- [`company_financial_analysis.Rmd`](company_financial_analysis.Rmd) — audited R Markdown workflow.
+- [`archive/legacy_course_analysis.Rmd`](archive/legacy_course_analysis.Rmd) — original coursework retained for provenance.
+- [`data/README.md`](data/README.md) — expected data schema.
+- [`R-packages.txt`](R-packages.txt) — direct package dependencies.
 
-## Methods and tools
+## Audit improvements
 
-The project uses R packages including `dplyr`, `car`, `ggplot2`, `GGally` and `caret`.
+The legacy analysis contained several methodological/technical issues that have been removed from the primary workflow: RMSE values from raw- and log-response models were compared directly, `sign(x) * log(abs(x))` was undefined when profit equalled zero, a Poisson count GLM was applied to continuous monetary market value, and one prediction used transformed inputs for a model trained on raw inputs.
 
-The workflow includes:
+The current workflow uses `sign(x) * log1p(abs(x))`, keeps regression comparisons on consistent scales, models positive market value with a Gamma log-link and deliberately removes `Profits` when predicting the derived `Profitable` outcome.
 
-- data-type and missing-value inspection,
-- exploratory pair plots,
-- simple and multivariable linear regression,
-- log-transformed regression,
-- model diagnostics,
-- model comparison and stepwise selection.
+## Data
 
-## Data requirements
-
-The source analysis expects a local file named `companies.txt`. The dataset is not committed to this repository, so the original data file is required to reproduce the full workflow.
+The original dataset is not committed. Place `companies.txt` under `data/` as described in [`data/README.md`](data/README.md).
 
 ## Reproducing the analysis
 
-1. Place `companies.txt` in the repository root.
-2. Open `company_financial_analysis.Rmd` in RStudio.
-3. Install any missing packages used by the document.
-4. Run or knit the analysis.
+1. Add the original dataset under `data/`.
+2. Install packages listed in [`R-packages.txt`](R-packages.txt).
+3. Run or knit `company_financial_analysis.Rmd` from top to bottom.
 
 ## Scope
 
-This repository is maintained as a portfolio example of applied regression, model diagnostics and statistical programming in R.
+This is an academic modelling portfolio project. Its outputs are not investment advice or company valuation guidance.
