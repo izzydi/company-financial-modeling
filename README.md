@@ -8,27 +8,13 @@ The analysis covers data inspection, missing-value checks, exploratory analysis,
 
 ## Repository contents
 
-- [`TASKS.Rmd`](TASKS.Rmd) — complete R Markdown analysis.
+- [`company_financial_analysis.Rmd`](company_financial_analysis.Rmd) — complete R Markdown analysis.
 
 ## Methods and tools
 
-The project uses R packages including:
+The project uses R packages including `dplyr`, `car`, `ggplot2`, `GGally` and `caret`.
 
-- `dplyr`
-- `car`
-- `ggplot2`
-- `GGally`
-- `caret`
-
-The workflow includes:
-
-- data-type and missing-value inspection,
-- exploratory pair plots,
-- linear regression,
-- log-transformed regression,
-- model diagnostics,
-- multivariable modelling,
-- stepwise model selection.
+The workflow includes data-type and missing-value inspection, exploratory pair plots, linear regression, log-transformed regression, model diagnostics, multivariable modelling and stepwise model selection.
 
 ## Data requirements
 
@@ -36,8 +22,8 @@ The source analysis expects a local file named `companies.txt`. That dataset is 
 
 ## Reproducing the analysis
 
-1. Place `companies.txt` in the R working directory.
-2. Open `TASKS.Rmd` in RStudio.
+1. Place `companies.txt` in the project directory.
+2. Open `company_financial_analysis.Rmd` in RStudio.
 3. Install any missing packages listed in the document.
 4. Run or knit the analysis.
 
