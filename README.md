@@ -1,5 +1,7 @@
 # Company Financial Modeling
 
+[![R CI](https://github.com/izzydi/company-financial-modeling/actions/workflows/r-ci.yml/badge.svg)](https://github.com/izzydi/company-financial-modeling/actions/workflows/r-ci.yml)
+
 An R-based statistical-modelling project examining relationships among company-level sales, market value, assets, profits and employment.
 
 ## Primary workflow
